@@ -1,0 +1,31 @@
+### Maven
+target/
+
+### Eclipse
+.classpath
+.project
+.settings/
+
+### STS
+.apt_generated/
+
+### VS Code
+.vscode/
+
+### IntelliJ
+.idea/
+
+### Environment
+.env
+.env.*
+
+application-local.yml
+application-local.properties
+
+### Logs
+*.log
+logs/
+
+### OS
+.DS_Store
+Thumbs.db

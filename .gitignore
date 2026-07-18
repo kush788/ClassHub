@@ -1,0 +1,30 @@
+# Maven
+**/target/
+
+# Eclipse / STS
+.metadata/
+**/.classpath
+**/.project
+**/.settings/
+**/.factorypath
+**/.apt_generated/
+
+# IntelliJ / VS Code
+.idea/
+.vscode/
+*.iml
+
+# Environment and local secrets
+.env
+.env.*
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
