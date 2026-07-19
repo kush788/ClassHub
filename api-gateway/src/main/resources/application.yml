@@ -28,6 +28,11 @@ spring:
               predicates:
                 - Path=/api/v1/test/**
 
+            - id: workspace-service-route
+              uri: lb://WORKSPACE-SERVICE
+              predicates:
+                - Path=/api/v1/workspaces/**
+
 eureka:
   client:
     service-url:
