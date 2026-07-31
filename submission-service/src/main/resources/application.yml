@@ -1,0 +1,43 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: SUBMISSION-SERVICE
+
+  datasource:
+    url: ${SUBMISSION_DB_URL}
+    username: ${SUBMISSION_DB_USERNAME}
+    password: ${SUBMISSION_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+
+    properties:
+      hibernate:
+        format_sql: true
+
+    open-in-view: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+    register-with-eureka: true
+    fetch-registry: true
+
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: ${JWT_SECRET}
+
+logging:
+  level:
+    com.classhub.submission: DEBUG
+    org.springframework.security: INFO
