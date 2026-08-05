@@ -1,6 +1,8 @@
 package com.classhub.auth.controller;
 import org.springframework.security.core.Authentication;
 
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,7 @@ import com.classhub.auth.dto.ResetPasswordRequest;
 import com.classhub.auth.dto.VerifyOtpRequest;
 import com.classhub.auth.dto.response.ChangePasswordResponse;
 import com.classhub.auth.dto.response.ForgotPasswordResponse;
+import com.classhub.auth.dto.response.InternalUserResponse;
 import com.classhub.auth.dto.response.LoginResponse;
 import com.classhub.auth.dto.response.LogoutResponse;
 import com.classhub.auth.dto.response.RefreshTokenResponse;
@@ -118,5 +121,13 @@ public class AuthController {
         return ResponseEntity.ok(
                 refreshTokenService.logout(
                         request.getRefreshToken()));
+    }
+    
+    @GetMapping("/internal/users/{userId}")
+    public ResponseEntity<InternalUserResponse> getInternalUserById(
+            @PathVariable UUID userId) {
+
+        return ResponseEntity.ok(
+                authService.getInternalUserById(userId));
     }
 }

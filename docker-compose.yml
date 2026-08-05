@@ -1,0 +1,177 @@
+services:
+  discovery-server:
+    build:
+      context: ./discovery-server
+    image: classhub-discovery-server:1.0
+    container_name: classhub-discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      PORT: 8761
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: ./auth-service
+    image: classhub-auth-service:1.0
+    container_name: classhub-auth-service
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    environment:
+      PORT: 8081
+      EUREKA_URL: http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+    restart: unless-stopped
+
+  workspace-service:
+    build:
+      context: ./workspace-service
+    image: classhub-workspace-service:1.0
+    container_name: classhub-workspace-service
+    ports:
+      - "8082:8082"
+    env_file:
+      - .env
+    environment:
+      PORT: 8082
+      EUREKA_URL: http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+      - auth-service
+    restart: unless-stopped
+
+  resource-service:
+    build:
+      context: ./resource-service
+    image: classhub-resource-service:1.0
+    container_name: classhub-resource-service
+    ports:
+      - "8083:8083"
+    env_file:
+      - .env
+    environment:
+      PORT: 8083
+      EUREKA_URL: http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+      - auth-service
+      - workspace-service
+      - notification-service
+    restart: unless-stopped
+
+  assignment-service:
+    build:
+      context: ./assignment-service
+    image: classhub-assignment-service:1.0
+    container_name: classhub-assignment-service
+    ports:
+      - "8084:8084"
+    env_file:
+      - .env
+    environment:
+      PORT: 8084
+      EUREKA_URL: http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+      - auth-service
+      - workspace-service
+      - resource-service
+      - notification-service
+    restart: unless-stopped
+
+  submission-service:
+    build:
+      context: ./submission-service
+    image: classhub-submission-service:1.0
+    container_name: classhub-submission-service
+    ports:
+      - "8085:8085"
+    env_file:
+      - .env
+    environment:
+      PORT: 8085
+      EUREKA_URL: http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+      - auth-service
+      - workspace-service
+      - assignment-service
+      - notification-service
+    restart: unless-stopped
+
+  leaderboard-service:
+    build:
+      context: ./leaderboard-service
+    image: classhub-leaderboard-service:1.0
+    container_name: classhub-leaderboard-service
+    ports:
+      - "8086:8086"
+    env_file:
+      - .env
+    environment:
+      PORT: 8086
+      EUREKA_URL: http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+      - auth-service
+      - workspace-service
+      - assignment-service
+      - submission-service
+    restart: unless-stopped
+
+
+  notification-service:
+    build:
+      context: ./notification-service
+    image: classhub-notification-service:1.0
+    container_name: classhub-notification-service
+    ports:
+      - "8087:8087"
+    env_file:
+      - .env
+    environment:
+      PORT: 8087
+      EUREKA_URL: http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+    restart: unless-stopped
+
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    image: classhub-api-gateway:1.0
+    container_name: classhub-api-gateway
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      PORT: 8080
+      EUREKA_URL: http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+      - auth-service
+      - workspace-service
+      - resource-service
+      - assignment-service
+      - submission-service
+      - leaderboard-service
+      - notification-service
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./classhub-frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    image: classhub-frontend:1.0
+    container_name: classhub-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    restart: unless-stopped

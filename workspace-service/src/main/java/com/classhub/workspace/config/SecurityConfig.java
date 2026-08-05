@@ -1,3 +1,4 @@
+
 package com.classhub.workspace.config;
 
 import org.springframework.context.annotation.Bean;
@@ -46,7 +47,8 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 "/actuator/health",
-                                "/actuator/info"
+                                "/actuator/info",
+                                "/api/v1/workspaces/internal/**"
                         ).permitAll()
 
                         .anyRequest()

@@ -6,8 +6,10 @@ import java.util.UUID;
 import com.classhub.workspace.dto.CreateWorkspaceRequest;
 import com.classhub.workspace.dto.JoinWorkspaceRequest;
 import com.classhub.workspace.dto.UpdateWorkspaceRequest;
+import com.classhub.workspace.dto.response.InternalWorkspaceMemberResponse;
 import com.classhub.workspace.dto.response.JoinWorkspaceResponse;
 import com.classhub.workspace.dto.response.RegenerateJoinCodeResponse;
+import com.classhub.workspace.dto.response.WorkspaceAccessResponse;
 import com.classhub.workspace.dto.response.WorkspaceMemberResponse;
 import com.classhub.workspace.dto.response.WorkspaceResponse;
 
@@ -36,6 +38,11 @@ public interface WorkspaceService {
             JoinWorkspaceRequest request,
             UUID studentId);
     
+    WorkspaceAccessResponse getWorkspaceAccess(
+            UUID workspaceId,
+            UUID userId,
+            String role);
+    
     List<WorkspaceResponse> getJoinedWorkspaces(
             UUID studentId);
     
@@ -51,4 +58,7 @@ public interface WorkspaceService {
     RegenerateJoinCodeResponse regenerateJoinCode(
             UUID workspaceId,
             UUID teacherId);
+    
+    List<InternalWorkspaceMemberResponse>
+    getInternalWorkspaceMembers(UUID workspaceId);
 }

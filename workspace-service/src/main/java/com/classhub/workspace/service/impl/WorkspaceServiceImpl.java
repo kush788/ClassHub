@@ -1,4 +1,6 @@
 package com.classhub.workspace.service.impl;
+import com.classhub.workspace.client.AuthServiceClient;
+import com.classhub.workspace.dto.external.InternalUserResponse;
 import com.classhub.workspace.exception.WorkspaceAccessDeniedException;
 import com.classhub.workspace.exception.WorkspaceAlreadyJoinedException;
 import com.classhub.workspace.exception.WorkspaceMemberNotFoundException;
@@ -12,8 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.classhub.workspace.dto.CreateWorkspaceRequest;
 import com.classhub.workspace.dto.JoinWorkspaceRequest;
 import com.classhub.workspace.dto.UpdateWorkspaceRequest;
+import com.classhub.workspace.dto.response.InternalWorkspaceMemberResponse;
 import com.classhub.workspace.dto.response.JoinWorkspaceResponse;
 import com.classhub.workspace.dto.response.RegenerateJoinCodeResponse;
+import com.classhub.workspace.dto.response.WorkspaceAccessResponse;
 import com.classhub.workspace.dto.response.WorkspaceMemberResponse;
 import com.classhub.workspace.dto.response.WorkspaceResponse;
 import com.classhub.workspace.entity.Workspace;
@@ -38,6 +42,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final JoinCodeGenerator joinCodeGenerator;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final AuthServiceClient authServiceClient;
 
     @Override
     @Transactional
@@ -243,27 +248,48 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .findById(workspaceId)
                 .orElseThrow(() ->
                         new WorkspaceNotFoundException(
-                                "Workspace not found with id: " + workspaceId));
+                                "Workspace not found with id: "
+                                        + workspaceId
+                        )
+                );
 
         if (!workspace.isActive()) {
             throw new WorkspaceNotFoundException(
-                    "Workspace not found with id: " + workspaceId);
+                    "Workspace not found with id: "
+                            + workspaceId
+            );
         }
 
         if (!workspace.getTeacherId().equals(teacherId)) {
             throw new WorkspaceAccessDeniedException(
-                    "You are not allowed to view members of this workspace.");
+                    "You are not allowed to view members "
+                            + "of this workspace."
+            );
         }
 
         return workspaceMemberRepository
                 .findByWorkspaceOrderByJoinedAtAsc(workspace)
                 .stream()
-                .map(member ->
-                        WorkspaceMemberResponse.builder()
-                                .membershipId(member.getId())
-                                .studentId(member.getStudentId())
-                                .joinedAt(member.getJoinedAt())
-                                .build())
+                .map(member -> {
+
+                    InternalUserResponse student =
+                            authServiceClient
+                                    .getInternalUserById(
+                                            member.getStudentId()
+                                    );
+
+                    String studentName =
+                            buildFullName(student);
+
+                    return WorkspaceMemberResponse
+                            .builder()
+                            .membershipId(member.getId())
+                            .studentId(member.getStudentId())
+                            .studentName(studentName)
+                            .studentEmail(student.getEmail())
+                            .joinedAt(member.getJoinedAt())
+                            .build();
+                })
                 .toList();
     }
     
@@ -338,6 +364,81 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .newJoinCode(newJoinCode)
                 .build();
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<InternalWorkspaceMemberResponse>
+    getInternalWorkspaceMembers(UUID workspaceId) {
+
+        Workspace workspace = workspaceRepository
+                .findByIdAndActiveTrue(workspaceId)
+                .orElseThrow(() ->
+                        new WorkspaceNotFoundException(
+                                "Active workspace not found with ID: "
+                                        + workspaceId
+                        )
+                );
+
+        return workspaceMemberRepository
+                .findByWorkspaceOrderByJoinedAtAsc(workspace)
+                .stream()
+                .map(member ->
+                        InternalWorkspaceMemberResponse
+                                .builder()
+                                .studentId(member.getStudentId())
+                                .joinedAt(member.getJoinedAt())
+                                .build()
+                )
+                .toList();
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public WorkspaceAccessResponse getWorkspaceAccess(
+            UUID workspaceId,
+            UUID userId,
+            String role) {
+
+        Workspace workspace = workspaceRepository
+                .findById(workspaceId)
+                .orElseThrow(() ->
+                        new WorkspaceNotFoundException(
+                                "Workspace not found with id: "
+                                        + workspaceId));
+
+        if (!workspace.isActive()) {
+            throw new WorkspaceNotFoundException(
+                    "Workspace not found with id: "
+                            + workspaceId);
+        }
+
+        String normalizedRole =
+                role == null
+                        ? ""
+                        : role.trim().toUpperCase();
+
+        boolean owner =
+                "TEACHER".equals(normalizedRole)
+                        && workspace.getTeacherId()
+                        .equals(userId);
+
+        boolean member =
+                "STUDENT".equals(normalizedRole)
+                        && workspaceMemberRepository
+                        .existsByWorkspaceAndStudentId(
+                                workspace,
+                                userId);
+
+        return WorkspaceAccessResponse.builder()
+                .workspaceId(workspace.getId())
+                .workspaceName(workspace.getName())
+                .active(true)
+                .owner(owner)
+                .member(member)
+                .canManage(owner)
+                .canView(owner || member)
+                .build();
+    }
 
     private String generateUniqueJoinCode() {
 
@@ -361,6 +462,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private WorkspaceResponse mapToResponse(
             Workspace workspace) {
 
+        long enrolledStudentCount =
+                workspaceMemberRepository
+                        .countByWorkspaceId(
+                                workspace.getId()
+                        );
+
         return WorkspaceResponse.builder()
                 .id(workspace.getId())
                 .name(workspace.getName())
@@ -369,8 +476,34 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .joinCode(workspace.getJoinCode())
                 .teacherId(workspace.getTeacherId())
                 .active(workspace.isActive())
+                .enrolledStudentCount(
+                        enrolledStudentCount
+                )
                 .createdAt(workspace.getCreatedAt())
                 .updatedAt(workspace.getUpdatedAt())
                 .build();
+    }
+    
+    private String buildFullName(
+            InternalUserResponse user) {
+
+        String firstName =
+                user.getFirstName() == null
+                        ? ""
+                        : user.getFirstName().trim();
+
+        String lastName =
+                user.getLastName() == null
+                        ? ""
+                        : user.getLastName().trim();
+
+        String fullName =
+                (firstName + " " + lastName).trim();
+
+        if (!fullName.isBlank()) {
+            return fullName;
+        }
+
+        return user.getEmail();
     }
 }

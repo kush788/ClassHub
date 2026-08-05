@@ -20,4 +20,6 @@ public interface WorkspaceRepository
 
     List<Workspace> findByTeacherIdAndActiveTrueOrderByCreatedAtDesc(
             UUID teacherId);
+    
+    Optional<Workspace> findByIdAndActiveTrue(UUID id);
 }

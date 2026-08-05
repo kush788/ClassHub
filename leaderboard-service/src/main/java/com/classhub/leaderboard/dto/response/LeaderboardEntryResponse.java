@@ -19,4 +19,7 @@ public class LeaderboardEntryResponse {
     private Integer totalMarks;
     private Integer gradedSubmissions;
     private BigDecimal averageMarks;
+    private String studentName;
+
+    private String studentEmail;
 }

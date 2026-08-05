@@ -1,9 +1,5 @@
 package com.classhub.auth.exception.handler;
 
-import com.classhub.auth.exception.CannotChangeOwnRoleException;
-import com.classhub.auth.exception.CannotDeleteSelfException;
-import com.classhub.auth.exception.CannotLockSelfException;
-
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +7,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,6 +15,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.classhub.auth.dto.response.ErrorResponse;
+import com.classhub.auth.exception.CannotChangeOwnRoleException;
+import com.classhub.auth.exception.CannotDeleteSelfException;
+import com.classhub.auth.exception.CannotLockSelfException;
 import com.classhub.auth.exception.EmailAlreadyRegisteredException;
 import com.classhub.auth.exception.EmailAlreadyVerifiedException;
 import com.classhub.auth.exception.EmailNotVerifiedException;
@@ -32,7 +32,9 @@ import com.classhub.auth.exception.SamePasswordException;
 import com.classhub.auth.exception.UserNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -66,6 +68,17 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.FORBIDDEN,
                 exception.getMessage(),
+                request.getRequestURI());
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ErrorResponse> handleDisabledException(
+            DisabledException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                "Please verify your email before logging in.",
                 request.getRequestURI());
     }
 
@@ -116,6 +129,17 @@ public class GlobalExceptionHandler {
                 request.getRequestURI());
     }
 
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ErrorResponse> handleLockedException(
+            LockedException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.LOCKED,
+                "Your account has been locked. Please contact the administrator.",
+                request.getRequestURI());
+    }
+
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAuthorizationDenied(
             AuthorizationDeniedException exception,
@@ -132,7 +156,8 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException exception,
             HttpServletRequest request) {
 
-        Map<String, String> validationErrors = new HashMap<>();
+        Map<String, String> validationErrors =
+                new HashMap<>();
 
         exception.getBindingResult()
                 .getFieldErrors()
@@ -141,15 +166,16 @@ public class GlobalExceptionHandler {
                                 error.getField(),
                                 error.getDefaultMessage()));
 
-        ErrorResponse response = ErrorResponse.builder()
-                .success(false)
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message("Validation failed.")
-                .path(request.getRequestURI())
-                .timestamp(LocalDateTime.now())
-                .validationErrors(validationErrors)
-                .build();
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                        .message("Validation failed.")
+                        .path(request.getRequestURI())
+                        .timestamp(LocalDateTime.now())
+                        .validationErrors(validationErrors)
+                        .build();
 
         return ResponseEntity
                 .badRequest()
@@ -160,6 +186,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleException(
             Exception exception,
             HttpServletRequest request) {
+
+        log.error(
+                "Unhandled exception for path {}",
+                request.getRequestURI(),
+                exception);
 
         return buildResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
@@ -172,29 +203,19 @@ public class GlobalExceptionHandler {
             String message,
             String path) {
 
-        ErrorResponse response = ErrorResponse.builder()
-                .success(false)
-                .status(status.value())
-                .error(status.getReasonPhrase())
-                .message(message)
-                .path(path)
-                .timestamp(LocalDateTime.now())
-                .validationErrors(null)
-                .build();
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(status.value())
+                        .error(status.getReasonPhrase())
+                        .message(message)
+                        .path(path)
+                        .timestamp(LocalDateTime.now())
+                        .validationErrors(null)
+                        .build();
 
         return ResponseEntity
                 .status(status)
                 .body(response);
-    }
-    
-    @ExceptionHandler(LockedException.class)
-    public ResponseEntity<ErrorResponse> handleLockedException(
-            LockedException exception,
-            HttpServletRequest request) {
-
-        return buildResponse(
-                HttpStatus.LOCKED,
-                "Your account has been locked. Please contact the administrator.",
-                request.getRequestURI());
     }
 }

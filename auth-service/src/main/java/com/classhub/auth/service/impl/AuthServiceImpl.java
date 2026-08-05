@@ -1,8 +1,11 @@
 package com.classhub.auth.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,7 @@ import com.classhub.auth.dto.ResetPasswordRequest;
 import com.classhub.auth.dto.VerifyOtpRequest;
 import com.classhub.auth.dto.response.ChangePasswordResponse;
 import com.classhub.auth.dto.response.ForgotPasswordResponse;
+import com.classhub.auth.dto.response.InternalUserResponse;
 import com.classhub.auth.dto.response.LoginResponse;
 import com.classhub.auth.dto.response.RegisterResponse;
 import com.classhub.auth.dto.response.ResendOtpResponse;
@@ -83,21 +87,35 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResponse login(LoginRequest request) {
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()));
+        String email = request.getEmail().trim().toLowerCase();
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new UserNotFoundException("User not found."));
+                        new BadCredentialsException(
+                                "Invalid email or password."));
+
+        if (user.isAccountLocked()) {
+            throw new LockedException(
+                    "Your account has been locked.");
+        }
 
         if (!user.isEmailVerified()) {
             throw new EmailNotVerifiedException(
                     "Please verify your email before logging in.");
         }
 
-        String accessToken = jwtService.generateToken(user);
+        if (!user.isEnabled()) {
+            throw new EmailNotVerifiedException(
+                    "Your account is currently disabled.");
+        }
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        email,
+                        request.getPassword()));
+
+        String accessToken =
+                jwtService.generateToken(user);
 
         String refreshToken =
                 refreshTokenService.createRefreshToken(user);
@@ -165,6 +183,24 @@ public class AuthServiceImpl implements AuthService {
 
         return new ResendOtpResponse(
                 "New OTP sent successfully.");
+    }
+    
+    @Override
+    public InternalUserResponse getInternalUserById(UUID userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new UserNotFoundException(
+                                "User not found with ID: " + userId));
+
+        return InternalUserResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .enabled(user.isEnabled())
+                .build();
     }
 
     @Override

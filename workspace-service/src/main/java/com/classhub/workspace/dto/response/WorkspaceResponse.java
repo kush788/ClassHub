@@ -31,4 +31,7 @@ public class WorkspaceResponse {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+    
+    private long enrolledStudentCount;
+    
 }

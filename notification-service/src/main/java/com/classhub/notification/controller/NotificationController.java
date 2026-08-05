@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.classhub.notification.dto.internal.AssignmentNotificationRequest;
 import com.classhub.notification.dto.internal.ResourceNotificationRequest;
+import com.classhub.notification.dto.internal.SubmissionGradedNotificationRequest;
 import com.classhub.notification.dto.internal.SubmissionNotificationRequest;
 import com.classhub.notification.service.NotificationService;
 
@@ -66,5 +67,23 @@ public class NotificationController {
 
         return ResponseEntity.ok(
                 "Assignment submission notification sent successfully.");
+    }
+    
+    @PostMapping("/submission-graded")
+    public ResponseEntity<String> submissionGraded(
+            @Valid
+            @RequestBody
+            SubmissionGradedNotificationRequest request) {
+
+        log.info(
+                "Submission-graded request received for submission {}",
+                request.getSubmissionId()
+        );
+
+        notificationService.notifySubmissionGraded(request);
+
+        return ResponseEntity.ok(
+                "Submission grading notification sent successfully."
+        );
     }
 }

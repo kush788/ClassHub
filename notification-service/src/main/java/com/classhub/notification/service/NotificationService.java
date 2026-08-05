@@ -2,6 +2,7 @@ package com.classhub.notification.service;
 
 import com.classhub.notification.dto.internal.AssignmentNotificationRequest;
 import com.classhub.notification.dto.internal.ResourceNotificationRequest;
+import com.classhub.notification.dto.internal.SubmissionGradedNotificationRequest;
 import com.classhub.notification.dto.internal.SubmissionNotificationRequest;
 
 public interface NotificationService {
@@ -12,5 +13,7 @@ public interface NotificationService {
             ResourceNotificationRequest request);
     void notifyAssignmentSubmitted(
             SubmissionNotificationRequest request);
+    void notifySubmissionGraded(
+            SubmissionGradedNotificationRequest request);
 
 }

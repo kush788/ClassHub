@@ -1,8 +1,5 @@
 package com.classhub.submission.service.impl;
-import org.springframework.stereotype.Service;
-import com.classhub.submission.dto.internal.SubmissionNotificationRequest;
-import lombok.extern.slf4j.Slf4j;
-import lombok.RequiredArgsConstructor;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +12,8 @@ import com.classhub.submission.client.notification.NotificationClient;
 import com.classhub.submission.dto.CreateSubmissionRequest;
 import com.classhub.submission.dto.GradeSubmissionRequest;
 import com.classhub.submission.dto.UpdateSubmissionRequest;
+import com.classhub.submission.dto.internal.SubmissionGradedNotificationRequest;
+import com.classhub.submission.dto.internal.SubmissionNotificationRequest;
 import com.classhub.submission.dto.response.GradedSubmissionResponse;
 import com.classhub.submission.dto.response.MessageResponse;
 import com.classhub.submission.dto.response.SubmissionResponse;
@@ -32,6 +31,7 @@ import com.classhub.submission.service.SubmissionService;
 import com.classhub.submission.service.WorkspaceAccessService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -41,10 +41,12 @@ public class SubmissionServiceImpl
         implements SubmissionService {
 
     private final SubmissionRepository submissionRepository;
+
     private final AssignmentAccessService assignmentAccessService;
+
     private final WorkspaceAccessService workspaceAccessService;
+
     private final NotificationClient notificationClient;
-    
 
     @Override
     public SubmissionResponse createSubmission(
@@ -75,27 +77,45 @@ public class SubmissionServiceImpl
             );
         }
 
-        Submission submission = Submission.builder()
-                .assignmentId(assignment.id())
-                .workspaceId(assignment.workspaceId())
-                .studentId(user.userId())
-                .content(normalizeText(request.getContent()))
-                .attachmentUrl(
-                        normalizeText(request.getAttachmentUrl())
-                )
-                .status(SubmissionStatus.SUBMITTED)
-                .active(true)
-                .build();
+        Submission submission =
+                Submission.builder()
+                        .assignmentId(
+                                assignment.id()
+                        )
+                        .workspaceId(
+                                assignment.workspaceId()
+                        )
+                        .studentId(
+                                user.userId()
+                        )
+                        .content(
+                                normalizeText(
+                                        request.getContent()
+                                )
+                        )
+                        .attachmentUrl(
+                                normalizeText(
+                                        request.getAttachmentUrl()
+                                )
+                        )
+                        .status(
+                                SubmissionStatus.SUBMITTED
+                        )
+                        .active(true)
+                        .build();
 
         Submission saved =
-                submissionRepository.save(submission);
+                submissionRepository.save(
+                        submission
+                );
 
         sendAssignmentSubmittedNotification(
                 saved,
-                assignment);
+                assignment
+        );
 
         return mapToResponse(saved);
-        }
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -104,9 +124,13 @@ public class SubmissionServiceImpl
             AuthenticatedUser user) {
 
         Submission submission =
-                findActiveSubmission(submissionId);
+                findActiveSubmission(
+                        submissionId
+                );
 
-        if (!submission.getStudentId().equals(user.userId())) {
+        if (!submission.getStudentId()
+                .equals(user.userId())) {
+
             workspaceAccessService.requireManageAccess(
                     submission.getWorkspaceId()
             );
@@ -131,12 +155,16 @@ public class SubmissionServiceImpl
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubmissionResponse> getSubmissionsByAssignment(
+    public List<SubmissionResponse>
+    getSubmissionsByAssignment(
             UUID assignmentId,
             AuthenticatedUser user) {
 
         AssignmentResponse assignment =
-                assignmentAccessService.getAssignment(assignmentId);
+                assignmentAccessService
+                        .getAssignment(
+                                assignmentId
+                        );
 
         workspaceAccessService.requireManageAccess(
                 assignment.workspaceId()
@@ -158,37 +186,50 @@ public class SubmissionServiceImpl
             AuthenticatedUser user) {
 
         Submission submission =
-                findActiveSubmission(submissionId);
+                findActiveSubmission(
+                        submissionId
+                );
 
-        if (!submission.getStudentId().equals(user.userId())) {
+        if (!submission.getStudentId()
+                .equals(user.userId())) {
+
             throw new SubmissionAccessDeniedException(
                     "You can update only your own submission"
             );
         }
 
-        if (submission.getStatus() == SubmissionStatus.GRADED) {
+        if (submission.getStatus()
+                == SubmissionStatus.GRADED) {
+
             throw new InvalidSubmissionOperationException(
                     "A graded submission cannot be updated"
             );
         }
 
         AssignmentResponse assignment =
-                assignmentAccessService.getAssignment(
-                        submission.getAssignmentId()
-                );
+                assignmentAccessService
+                        .getAssignment(
+                                submission.getAssignmentId()
+                        );
 
         validateDeadline(assignment);
 
         submission.setContent(
-                normalizeText(request.getContent())
+                normalizeText(
+                        request.getContent()
+                )
         );
 
         submission.setAttachmentUrl(
-                normalizeText(request.getAttachmentUrl())
+                normalizeText(
+                        request.getAttachmentUrl()
+                )
         );
 
         Submission updated =
-                submissionRepository.save(submission);
+                submissionRepository.save(
+                        submission
+                );
 
         return mapToResponse(updated);
     }
@@ -200,18 +241,23 @@ public class SubmissionServiceImpl
             AuthenticatedUser user) {
 
         Submission submission =
-                findActiveSubmission(submissionId);
+                findActiveSubmission(
+                        submissionId
+                );
 
         AssignmentResponse assignment =
-                assignmentAccessService.getAssignment(
-                        submission.getAssignmentId()
-                );
+                assignmentAccessService
+                        .getAssignment(
+                                submission.getAssignmentId()
+                        );
 
         workspaceAccessService.requireManageAccess(
                 assignment.workspaceId()
         );
 
-        if (request.getMarksObtained() > assignment.maxMarks()) {
+        if (request.getMarksObtained()
+                > assignment.maxMarks()) {
+
             throw new InvalidSubmissionOperationException(
                     "Marks obtained cannot exceed maximum marks: "
                             + assignment.maxMarks()
@@ -223,7 +269,9 @@ public class SubmissionServiceImpl
         );
 
         submission.setFeedback(
-                normalizeText(request.getFeedback())
+                normalizeText(
+                        request.getFeedback()
+                )
         );
 
         submission.setStatus(
@@ -231,7 +279,14 @@ public class SubmissionServiceImpl
         );
 
         Submission graded =
-                submissionRepository.save(submission);
+                submissionRepository.save(
+                        submission
+                );
+
+        sendSubmissionGradedNotification(
+                graded,
+                assignment
+        );
 
         return mapToResponse(graded);
     }
@@ -242,65 +297,49 @@ public class SubmissionServiceImpl
             AuthenticatedUser user) {
 
         Submission submission =
-                findActiveSubmission(submissionId);
+                findActiveSubmission(
+                        submissionId
+                );
 
-        if (!submission.getStudentId().equals(user.userId())) {
+        if (!submission.getStudentId()
+                .equals(user.userId())) {
+
             throw new SubmissionAccessDeniedException(
                     "You can delete only your own submission"
             );
         }
 
-        if (submission.getStatus() == SubmissionStatus.GRADED) {
+        if (submission.getStatus()
+                == SubmissionStatus.GRADED) {
+
             throw new InvalidSubmissionOperationException(
                     "A graded submission cannot be deleted"
             );
         }
 
         AssignmentResponse assignment =
-                assignmentAccessService.getAssignment(
-                        submission.getAssignmentId()
-                );
+                assignmentAccessService
+                        .getAssignment(
+                                submission.getAssignmentId()
+                        );
 
         validateDeadline(assignment);
 
         submission.setActive(false);
 
-        submissionRepository.save(submission);
+        submissionRepository.save(
+                submission
+        );
 
         return new MessageResponse(
                 "Submission deleted successfully"
         );
     }
 
-    private Submission findActiveSubmission(
-            UUID submissionId) {
-
-        return submissionRepository
-                .findByIdAndActiveTrue(submissionId)
-                .orElseThrow(() ->
-                        new SubmissionNotFoundException(
-                                "Submission not found with ID: "
-                                        + submissionId
-                        )
-                );
-    }
-
-    private void validateDeadline(
-            AssignmentResponse assignment) {
-
-        if (assignment.dueDate() != null
-                && LocalDateTime.now()
-                        .isAfter(assignment.dueDate())) {
-
-            throw new SubmissionDeadlinePassedException(
-                    "The assignment deadline has passed"
-            );
-        }
-    }
-    
     @Override
     @Transactional(readOnly = true)
-    public List<GradedSubmissionResponse> getGradedSubmissionsForLeaderboard(
+    public List<GradedSubmissionResponse>
+    getGradedSubmissionsForLeaderboard(
             UUID workspaceId) {
 
         return submissionRepository
@@ -310,7 +349,6 @@ public class SubmissionServiceImpl
                 )
                 .stream()
                 .map(submission ->
-
                         GradedSubmissionResponse
                                 .builder()
                                 .submissionId(
@@ -329,70 +367,200 @@ public class SubmissionServiceImpl
                                         submission.getMarksObtained()
                                 )
                                 .build()
-
                 )
                 .toList();
     }
-    
+
+    private Submission findActiveSubmission(
+            UUID submissionId) {
+
+        return submissionRepository
+                .findByIdAndActiveTrue(
+                        submissionId
+                )
+                .orElseThrow(() ->
+                        new SubmissionNotFoundException(
+                                "Submission not found with ID: "
+                                        + submissionId
+                        )
+                );
+    }
+
+    private void validateDeadline(
+            AssignmentResponse assignment) {
+
+        if (assignment.dueDate() != null
+                && LocalDateTime.now()
+                .isAfter(
+                        assignment.dueDate()
+                )) {
+
+            throw new SubmissionDeadlinePassedException(
+                    "The assignment deadline has passed"
+            );
+        }
+    }
+
     private void sendAssignmentSubmittedNotification(
             Submission submission,
             AssignmentResponse assignment) {
 
         try {
 
-            SubmissionNotificationRequest notificationRequest =
-                    SubmissionNotificationRequest.builder()
-                            .submissionId(submission.getId())
-                            .assignmentId(submission.getAssignmentId())
-                            .workspaceId(submission.getWorkspaceId())
-                            .studentId(submission.getStudentId())
-                            .teacherId(assignment.teacherId())
-                            .assignmentTitle(assignment.title())
-                            .submittedAt(submission.getSubmittedAt())
+            SubmissionNotificationRequest request =
+                    SubmissionNotificationRequest
+                            .builder()
+                            .submissionId(
+                                    submission.getId()
+                            )
+                            .assignmentId(
+                                    submission.getAssignmentId()
+                            )
+                            .workspaceId(
+                                    submission.getWorkspaceId()
+                            )
+                            .studentId(
+                                    submission.getStudentId()
+                            )
+                            .teacherId(
+                                    assignment.teacherId()
+                            )
+                            .assignmentTitle(
+                                    assignment.title()
+                            )
+                            .submittedAt(
+                                    submission.getSubmittedAt()
+                            )
                             .build();
 
-            notificationClient.notifyAssignmentSubmitted(
-                    notificationRequest);
+            notificationClient
+                    .notifyAssignmentSubmitted(
+                            request
+                    );
 
             log.info(
                     "Assignment-submitted notification triggered for submission {}",
-                    submission.getId());
+                    submission.getId()
+            );
 
         } catch (Exception exception) {
 
             log.error(
                     "Submission saved, but teacher notification failed for submission {}",
                     submission.getId(),
-                    exception);
+                    exception
+            );
         }
     }
 
-    private String normalizeText(String value) {
+    private void sendSubmissionGradedNotification(
+            Submission submission,
+            AssignmentResponse assignment) {
+
+        try {
+
+            SubmissionGradedNotificationRequest request =
+                    SubmissionGradedNotificationRequest
+                            .builder()
+                            .submissionId(
+                                    submission.getId()
+                            )
+                            .assignmentId(
+                                    submission.getAssignmentId()
+                            )
+                            .workspaceId(
+                                    submission.getWorkspaceId()
+                            )
+                            .studentId(
+                                    submission.getStudentId()
+                            )
+                            .assignmentTitle(
+                                    assignment.title()
+                            )
+                            .marksObtained(
+                                    submission.getMarksObtained()
+                            )
+                            .maxMarks(
+                                    assignment.maxMarks()
+                            )
+                            .feedback(
+                                    submission.getFeedback()
+                            )
+                            .build();
+
+            notificationClient
+                    .notifySubmissionGraded(
+                            request
+                    );
+
+            log.info(
+                    "Submission-graded notification triggered for submission {}",
+                    submission.getId()
+            );
+
+        } catch (Exception exception) {
+
+            log.error(
+                    "Submission was graded, but student notification failed for submission {}",
+                    submission.getId(),
+                    exception
+            );
+        }
+    }
+
+    private String normalizeText(
+            String value) {
 
         if (value == null) {
             return null;
         }
 
-        String trimmed = value.trim();
+        String trimmed =
+                value.trim();
 
-        return trimmed.isEmpty() ? null : trimmed;
+        return trimmed.isEmpty()
+                ? null
+                : trimmed;
     }
 
     private SubmissionResponse mapToResponse(
             Submission submission) {
 
-        return SubmissionResponse.builder()
-                .id(submission.getId())
-                .assignmentId(submission.getAssignmentId())
-                .workspaceId(submission.getWorkspaceId())
-                .studentId(submission.getStudentId())
-                .content(submission.getContent())
-                .attachmentUrl(submission.getAttachmentUrl())
-                .marksObtained(submission.getMarksObtained())
-                .feedback(submission.getFeedback())
-                .status(submission.getStatus())
-                .submittedAt(submission.getSubmittedAt())
-                .updatedAt(submission.getUpdatedAt())
+        return SubmissionResponse
+                .builder()
+                .id(
+                        submission.getId()
+                )
+                .assignmentId(
+                        submission.getAssignmentId()
+                )
+                .workspaceId(
+                        submission.getWorkspaceId()
+                )
+                .studentId(
+                        submission.getStudentId()
+                )
+                .content(
+                        submission.getContent()
+                )
+                .attachmentUrl(
+                        submission.getAttachmentUrl()
+                )
+                .marksObtained(
+                        submission.getMarksObtained()
+                )
+                .feedback(
+                        submission.getFeedback()
+                )
+                .status(
+                        submission.getStatus()
+                )
+                .submittedAt(
+                        submission.getSubmittedAt()
+                )
+                .updatedAt(
+                        submission.getUpdatedAt()
+                )
                 .build();
     }
 }

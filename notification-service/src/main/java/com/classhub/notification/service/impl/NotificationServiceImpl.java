@@ -11,6 +11,7 @@ import com.classhub.notification.dto.internal.AssignmentNotificationRequest;
 import com.classhub.notification.dto.internal.InternalUserResponse;
 import com.classhub.notification.dto.internal.InternalWorkspaceMemberResponse;
 import com.classhub.notification.dto.internal.ResourceNotificationRequest;
+import com.classhub.notification.dto.internal.SubmissionGradedNotificationRequest;
 import com.classhub.notification.dto.internal.SubmissionNotificationRequest;
 import com.classhub.notification.service.EmailService;
 import com.classhub.notification.service.NotificationService;
@@ -267,6 +268,72 @@ public class NotificationServiceImpl implements NotificationService {
                 "Assignment submission notification sent to teacher {} for submission {}",
                 teacher.getId(),
                 request.getSubmissionId());
+    }
+    
+    @Override
+    public void notifySubmissionGraded(
+            SubmissionGradedNotificationRequest request) {
+
+        InternalUserResponse student =
+                authClient.getUser(
+                        request.getStudentId()
+                );
+
+        if (!student.isEnabled()) {
+            log.warn(
+                    "Student account is disabled. Grade notification not sent: {}",
+                    student.getId()
+            );
+
+            return;
+        }
+
+        String studentName =
+                buildFullName(student);
+
+        String feedback =
+                request.getFeedback() == null
+                        || request.getFeedback().isBlank()
+                        ? "No feedback provided."
+                        : request.getFeedback().trim();
+
+        String subject =
+                "Assignment Graded - ClassHub";
+
+        String body = String.format("""
+                Hello %s,
+
+                Your assignment has been graded in ClassHub.
+
+                Assignment: %s
+                Marks: %d / %d
+                Feedback: %s
+                Submission ID: %s
+
+                Please log in to ClassHub to view the complete result.
+
+                Regards,
+                ClassHub Team
+                """,
+                studentName,
+                request.getAssignmentTitle(),
+                request.getMarksObtained(),
+                request.getMaxMarks(),
+                feedback,
+                request.getSubmissionId()
+        );
+
+        emailService.sendEmail(
+                student.getEmail(),
+                subject,
+                body
+        );
+
+        log.info(
+                "Grade notification sent to student {} for submission {}",
+                student.getId(),
+                request.getSubmissionId()
+        );
     }
 
     private String buildFullName(

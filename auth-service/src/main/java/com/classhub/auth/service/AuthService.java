@@ -1,5 +1,7 @@
 package com.classhub.auth.service;
+import java.util.UUID;
 
+import com.classhub.auth.dto.response.InternalUserResponse;
 import com.classhub.auth.dto.ChangePasswordRequest;
 import com.classhub.auth.dto.ForgotPasswordRequest;
 import com.classhub.auth.dto.ResetPasswordRequest;
@@ -31,5 +33,7 @@ public interface AuthService {
     ResetPasswordResponse resetPassword(ResetPasswordRequest request);
     
     ChangePasswordResponse changePassword(ChangePasswordRequest request, String email);
+    
+    InternalUserResponse getInternalUserById(UUID userId);
 
 }

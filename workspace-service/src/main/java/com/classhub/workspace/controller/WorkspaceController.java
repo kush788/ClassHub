@@ -1,5 +1,5 @@
 package com.classhub.workspace.controller;
-
+import com.classhub.workspace.dto.response.InternalWorkspaceMemberResponse;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,6 +20,7 @@ import com.classhub.workspace.dto.JoinWorkspaceRequest;
 import com.classhub.workspace.dto.UpdateWorkspaceRequest;
 import com.classhub.workspace.dto.response.JoinWorkspaceResponse;
 import com.classhub.workspace.dto.response.RegenerateJoinCodeResponse;
+import com.classhub.workspace.dto.response.WorkspaceAccessResponse;
 import com.classhub.workspace.dto.response.WorkspaceMemberResponse;
 import com.classhub.workspace.dto.response.WorkspaceResponse;
 import com.classhub.workspace.exception.WorkspaceAccessDeniedException;
@@ -175,6 +176,34 @@ public class WorkspaceController {
                 workspaceService.regenerateJoinCode(
                         workspaceId,
                         user.userId()));
+    }
+    
+    @GetMapping("/{workspaceId}/access")
+    public ResponseEntity<WorkspaceAccessResponse>
+            getWorkspaceAccess(
+
+            @PathVariable UUID workspaceId,
+
+            @AuthenticationPrincipal
+            AuthenticatedUser user) {
+
+        return ResponseEntity.ok(
+                workspaceService.getWorkspaceAccess(
+                        workspaceId,
+                        user.userId(),
+                        user.role()));
+    }
+    
+    @GetMapping("/internal/{workspaceId}/members")
+    public ResponseEntity<List<InternalWorkspaceMemberResponse>>
+    getInternalWorkspaceMembers(
+            @PathVariable UUID workspaceId) {
+
+        return ResponseEntity.ok(
+                workspaceService.getInternalWorkspaceMembers(
+                        workspaceId
+                )
+        );
     }
 
     private void requireRole(

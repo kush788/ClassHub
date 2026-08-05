@@ -19,4 +19,8 @@ public class WorkspaceMemberResponse {
     private UUID studentId;
 
     private LocalDateTime joinedAt;
+    
+    private String studentName;
+
+    private String studentEmail;
 }

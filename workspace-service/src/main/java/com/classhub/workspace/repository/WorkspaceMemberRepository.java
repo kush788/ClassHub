@@ -14,25 +14,30 @@ public interface WorkspaceMemberRepository
 
     boolean existsByWorkspaceAndStudentId(
             Workspace workspace,
-            UUID studentId);
+            UUID studentId
+    );
 
     Optional<WorkspaceMember> findByWorkspaceAndStudentId(
             Workspace workspace,
-            UUID studentId);
+            UUID studentId
+    );
 
     List<WorkspaceMember> findByWorkspaceOrderByJoinedAtAsc(
-            Workspace workspace);
+            Workspace workspace
+    );
 
     List<WorkspaceMember> findByStudentIdOrderByJoinedAtDesc(
-            UUID studentId);
+            UUID studentId
+    );
 
     long countByWorkspace(Workspace workspace);
-    
+
     List<WorkspaceMember> findByStudentId(UUID studentId);
+    
+    long countByWorkspaceId(UUID workspaceId);
 
     void deleteByWorkspaceAndStudentId(
             Workspace workspace,
-            UUID studentId);
-    
-    
+            UUID studentId
+    );
 }
