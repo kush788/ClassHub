@@ -2,18 +2,16 @@ import React from "react";
 
 import {
   BrowserRouter,
-  Routes,
-  Route,
   Navigate,
   Outlet,
+  Route,
+  Routes,
 } from "react-router-dom";
 
-import {
-  AuthProvider,
-  useAuth,
-} from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import { ToastProvider } from "./context/ToastContext";
+
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 
@@ -21,16 +19,23 @@ import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { VerifyOtp } from "./pages/VerifyOtp";
+import { ForgotPassword } from "./pages/ForgotPassword";
+import { ResetPassword } from "./pages/ResetPassword";
+
 import { TeacherDashboard } from "./pages/TeacherDashboard";
 import { StudentDashboard } from "./pages/StudentDashboard";
 import { WorkspaceDetail } from "./pages/WorkspaceDetail";
 import { Leaderboard } from "./pages/Leaderboard";
+import TeacherResponses from "./pages/TeacherResponses";
+import StudentResponses from "./pages/StudentResponses";
+
+import Playground from "./pages/Playground";
+import PlaygroundHome from "./pages/PlaygroundHome";
+
 import { Unauthorized } from "./pages/Unauthorized";
 import { NotFound } from "./pages/NotFound";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { ResetPassword } from "./pages/ResetPassword";
 
-// Landing route redirect based on authentication
+// Redirect root path based on login and role
 const HomeRedirect: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
 
@@ -38,14 +43,18 @@ const HomeRedirect: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  return user?.role === "TEACHER" ? (
-    <Navigate to="/teacher/dashboard" replace />
-  ) : (
-    <Navigate to="/student/dashboard" replace />
-  );
+  if (user?.role === "TEACHER") {
+    return <Navigate to="/teacher/dashboard" replace />;
+  }
+
+  if (user?.role === "STUDENT") {
+    return <Navigate to="/student/dashboard" replace />;
+  }
+
+  return <Navigate to="/unauthorized" replace />;
 };
 
-// Layout Wrapper
+// Shared secured layout
 const LayoutWrapper: React.FC = () => {
   return (
     <Layout>
@@ -60,20 +69,24 @@ export default function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
-            {/* PUBLIC AUTH ROUTES */}
+            {/* Public authentication routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify-otp" element={<VerifyOtp />} />
-            <Route path="/forgot-password"element={<ForgotPassword />}/>
-            <Route path="/reset-password" element={<ResetPassword />}/>
 
-            {/* ROOT LANDING PATH */}
+            <Route path="/register" element={<Register />} />
+
+            <Route path="/verify-otp" element={<VerifyOtp />} />
+
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* Root redirect */}
             <Route path="/" element={<HomeRedirect />} />
 
-            {/* SECURED HUB SECTION */}
+            {/* Protected application routes */}
             <Route element={<ProtectedRoute />}>
               <Route element={<LayoutWrapper />}>
-                {/* Teacher */}
+                {/* Teacher dashboard */}
                 <Route
                   path="/teacher/dashboard"
                   element={
@@ -83,7 +96,25 @@ export default function App() {
                   }
                 />
 
-                {/* Student */}
+                <Route
+                  path="/playground/question/:questionId/responses"
+                  element={
+                    <ProtectedRoute allowedRole="TEACHER">
+                      <TeacherResponses />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/workspace/:workspaceId/playground/history"
+                  element={
+                    <ProtectedRoute allowedRole="STUDENT">
+                      <StudentResponses />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Student dashboard */}
                 <Route
                   path="/student/dashboard"
                   element={
@@ -93,35 +124,32 @@ export default function App() {
                   }
                 />
 
-                {/* Shared Workspace */}
+                {/* Shared workspace */}
                 <Route
                   path="/workspace/:workspaceId"
                   element={<WorkspaceDetail />}
                 />
 
-                {/* Leaderboard */}
+                {/* Top-level playground entry page */}
+                <Route path="/playground" element={<PlaygroundHome />} />
+
+                {/* Workspace-specific coding playground */}
                 <Route
-                  path="/leaderboard"
-                  element={<Leaderboard />}
+                  path="/workspace/:workspaceId/playground"
+                  element={<Playground />}
                 />
+
+                {/* Shared leaderboard */}
+                <Route path="/leaderboard" element={<Leaderboard />} />
               </Route>
             </Route>
 
-            {/* ERROR PAGES */}
-            <Route
-              path="/unauthorized"
-              element={<Unauthorized />}
-            />
+            {/* Error pages */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
 
-            <Route
-              path="/404"
-              element={<NotFound />}
-            />
+            <Route path="/404" element={<NotFound />} />
 
-            <Route
-              path="*"
-              element={<Navigate to="/404" replace />}
-            />
+            <Route path="*" element={<Navigate to="/404" replace />} />
           </Routes>
         </BrowserRouter>
       </ToastProvider>

@@ -22,6 +22,7 @@ import { BrandLogo } from "./BrandLogo";
 
 import {
   BookOpen,
+  Code2,
   LogOut,
   Menu,
   X,
@@ -348,6 +349,20 @@ export const Layout: React.FC<LayoutProps> = ({
                 <Trophy className="w-3.5 h-3.5 text-amber-500" />
                 <span>Leaderboard</span>
               </Link>
+
+              {/* Playground */}
+              <Link
+                to="/playground"
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  location.pathname.startsWith("/playground")
+                    ? "bg-zinc-800/90 text-zinc-100 shadow-xs"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                }`}
+              >
+                <Code2 className="w-3.5 h-3.5 text-purple-400" />
+                <span>Playground</span>
+              </Link>
+
             </nav>
           </div>
 
@@ -475,6 +490,21 @@ export const Layout: React.FC<LayoutProps> = ({
                 >
                   <Trophy className="w-4 h-4 text-amber-500" />
                   Leaderboard
+                </Link>
+
+                <Link
+                  to="/playground"
+                  onClick={() =>
+                    setIsMobileMenuOpen(false)
+                  }
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
+                    location.pathname.startsWith("/playground")
+                      ? "bg-zinc-800 text-zinc-100"
+                      : "text-zinc-400 hover:bg-zinc-900"
+                  }`}
+                >
+                  <Code2 className="w-4 h-4 text-purple-400" />
+                  Playground
                 </Link>
 
                 <div className="pt-2">
