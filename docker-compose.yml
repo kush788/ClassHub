@@ -140,6 +140,7 @@ services:
     restart: unless-stopped
 
 
+<<<<<<< HEAD
   playground-service:
     build:
       context: ./playground-service
@@ -160,6 +161,8 @@ services:
     restart: unless-stopped
 
 
+=======
+>>>>>>> 3828956a980dbc50c1f7f7bf2f24c769b35d220f
   api-gateway:
     build:
       context: ./api-gateway
@@ -181,7 +184,10 @@ services:
       - submission-service
       - leaderboard-service
       - notification-service
+<<<<<<< HEAD
       - playground-service
+=======
+>>>>>>> 3828956a980dbc50c1f7f7bf2f24c769b35d220f
     restart: unless-stopped
 
   frontend:
