@@ -99,33 +99,69 @@ export const TeacherDashboard: React.FC = () => {
   }, []);
 
   const handleCopyCode = async (
-    code: string,
-  ): Promise<void> => {
-    try {
+  code: string,
+): Promise<void> => {
+  try {
+    if (
+      navigator.clipboard &&
+      window.isSecureContext
+    ) {
+      // HTTPS / localhost
       await navigator.clipboard.writeText(code);
+    } else {
+      // Fallback for HTTP deployment
+      const textArea =
+        document.createElement("textarea");
 
-      setCopiedCodeStr(code);
+      textArea.value = code;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "-9999px";
+      textArea.setAttribute("readonly", "");
 
-      addToast(
-        `Join code "${code}" copied to clipboard!`,
-        "success",
+      document.body.appendChild(textArea);
+
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(
+        0,
+        textArea.value.length,
       );
 
-      window.setTimeout(() => {
-        setCopiedCodeStr(null);
-      }, 2000);
-    } catch (error) {
-      console.error(
-        "Unable to copy join code:",
-        error,
-      );
+      const copied =
+        document.execCommand("copy");
 
-      addToast(
-        "Failed to copy code. Try copying it manually.",
-        "error",
-      );
+      document.body.removeChild(textArea);
+
+      if (!copied) {
+        throw new Error(
+          "Fallback clipboard copy failed.",
+        );
+      }
     }
-  };
+
+    setCopiedCodeStr(code);
+
+    addToast(
+      `Join code "${code}" copied to clipboard!`,
+      "success",
+    );
+
+    window.setTimeout(() => {
+      setCopiedCodeStr(null);
+    }, 2000);
+  } catch (error) {
+    console.error(
+      "Unable to copy join code:",
+      error,
+    );
+
+    addToast(
+      "Failed to copy code. Try copying it manually.",
+      "error",
+    );
+  }
+};
 
   const handleCreateWorkspace = async (
     event: React.FormEvent<HTMLFormElement>,
