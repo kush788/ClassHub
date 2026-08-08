@@ -502,32 +502,71 @@ const executeConfirmAction = async () => {
   }, [workspace?.id, isTeacher]);
 
   const handleCopyCode = async () => {
-    if (!workspace?.joinCode) {
-      return;
+  if (!workspace?.joinCode) {
+    return;
+  }
+
+  const code = workspace.joinCode;
+
+  try {
+    if (
+      navigator.clipboard &&
+      window.isSecureContext
+    ) {
+      await navigator.clipboard.writeText(code);
+    } else {
+      const textArea =
+        document.createElement("textarea");
+
+      textArea.value = code;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "-9999px";
+      textArea.setAttribute("readonly", "");
+
+      document.body.appendChild(textArea);
+
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(
+        0,
+        textArea.value.length,
+      );
+
+      const copied =
+        document.execCommand("copy");
+
+      document.body.removeChild(textArea);
+
+      if (!copied) {
+        throw new Error(
+          "Fallback clipboard copy failed.",
+        );
+      }
     }
 
-    try {
-      await navigator.clipboard.writeText(
-        workspace.joinCode,
-      );
+    setCopied(true);
 
-      setCopied(true);
+    addToast(
+      `Join code "${code}" copied.`,
+      "success",
+    );
 
-      addToast(
-        `Join code "${workspace.joinCode}" copied.`,
-        "success",
-      );
+    window.setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  } catch (error) {
+    console.error(
+      "Unable to copy join code:",
+      error,
+    );
 
-      window.setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch {
-      addToast(
-        "Unable to copy join code.",
-        "error",
-      );
-    }
-  };
+    addToast(
+      "Unable to copy join code.",
+      "error",
+    );
+  }
+};
 
   const handleRegenerateCode = () => {
   if (!workspaceId || !isTeacher) {
