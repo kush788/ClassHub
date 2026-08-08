@@ -439,7 +439,7 @@ if (!/[@$!%*?&]/.test(password)) {
                       event.target.value,
                     )
                   }
-                  placeholder="At least 6 characters"
+                  placeholder="At least 8 characters"
                   className="block w-full pl-9 pr-3 py-2.5 bg-zinc-950/80 border border-zinc-800/80 rounded-xl text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#A855F7] transition-all duration-300"
                 />
               </div>
